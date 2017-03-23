@@ -9,6 +9,18 @@
 		<style>
 			body { margin:0; padding:0; }
 			#map { position:absolute; top:0; bottom:0; width:100%; z-index:1; cursor:default; background:#202020; }
+		
+			svg {
+			  position: relative;
+			}
+
+			path {
+			  fill: none;
+			  fill-opacity: 0;
+			  stroke: #fff;
+			  stroke-width: 1.5px;
+			}
+
 		</style>
 	</head>
 	<body>
@@ -16,6 +28,7 @@
 		<div id='app'></div>
 
 		<script src="lib/leaflet-v1.0.2.js"></script>
+		<script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 		<script src="lib/chroma.min.js"></script>
 		<script src="streamline.js/streamline.js"></script>
 		<script src="streamline.js/leaflet-streamline.js"></script>
@@ -40,9 +53,46 @@
 
 				var windmap = new L.Windmap(map);
 
-				$.getJSON("/weatherbox/grib2tiles/functions/msm-contour/out.geojson", function (data){
-					L.geoJSON(data).addTo(map);
+				//$.getJSON("/weatherbox/grib2tiles/functions/msm-contour/out.geojson", function (data){
+				//	L.geoJSON(data).addTo(map);
+				//});
+
+				var svg = d3.select(map.getPanes().overlayPane).append("svg"),
+    				g = svg.append("g").attr("class", "leaflet-zoom-hide");
+
+				d3.json("/weatherbox/grib2tiles/functions/msm-contour/out.geojson", function(error, collection) {
+  					if (error) throw error;
+
+					var transform = d3.geo.transform({point: projectPoint}),
+					path = d3.geo.path().projection(transform);
+
+					var feature = g.selectAll("path")
+						.data(collection.features)
+						.enter().append("path");
+
+					feature.attr("d", path);
+
+					map.on("viewreset", reset);
+					reset();
+
+					function reset() {
+						var bounds = path.bounds(collection),
+							topLeft = bounds[0],
+							bottomRight = bounds[1];
+
+						svg	.attr("width", bottomRight[0] - topLeft[0])
+							.attr("height", bottomRight[1] - topLeft[1])
+							.style("left", topLeft[0] + "px")
+							.style("top", topLeft[1] + "px");
+
+						g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+					}
 				});
+
+				function projectPoint(x, y) {
+					var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+					this.stream.point(point.x, point.y);
+				}
 
 				window.map = map;
 				window.windmap = windmap;
