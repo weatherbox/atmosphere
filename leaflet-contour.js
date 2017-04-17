@@ -54,33 +54,21 @@ L.Contour = L.Layer.extend({
 	_initLayer: function (){
 		this._layer = L.DomUtil.create('div', 'contour-layer');
 		this._map.getPanes().overlayPane.appendChild(this._layer);
-		this._layerCanvases = [];
 
-		this._ctx = this._initCanvas("contour-layer-canvas", 4);	
+		var svg = document.createElement("svg");
+		svg.style.width = this._width + 'px';
+		svg.style.height = this._height + 'px';
+		svg.style.position = 'absolute';
+		svg.style.top = 0;
+		svg.style.left = 0;
+		svg.style.zIndex = 4;
+
+		this._layer.appendChild(svg);
 	},
 
-	_initCanvas: function (id, zindex) {
-		var canvas = document.createElement("canvas");
-		canvas.id = id;
-		canvas.width = this._canvasWidth;
-		canvas.height = this._canvasHeight;
-		canvas.style.position = 'absolute';
-		canvas.style.top = 0;
-		canvas.style.left = 0;
-		canvas.style.zIndex = zindex;
-		canvas.style.willChange = 'transform';
-		canvas.style.width = this._width + 'px';
-		canvas.style.height = this._height + 'px';
-
-		this._layer.appendChild(canvas);
-		this._layerCanvases.push(canvas);
-
-		return canvas.getContext("2d");
-	},
 	
 	_startZoom: function (){
 		this._startUpdate();
-		this.streamline.cancel();
 	},
 
 	_animateZoom: function (e) {
@@ -124,10 +112,29 @@ L.Contour = L.Layer.extend({
 		this._startUpdate();
 
 		var bounds = this._map.getBounds(),
-			zoom = this._map.getZoom(),
-			scale = this._getScale(zoom);
+			zoom = this._map.getZoom();
 		var self = this;
 
+		this.data.getField(bounds, zoom, function (field) {
+			self._updateField(field, bounds, zoom);
+		});
+	},
+
+	_updateField: function (field, bounds, zoom){
+		console.log(field);
+
+		var values = field._field;
+		var contours = d3.contours().size([field._fnx, field._fny]);
+		var path = d3.geoPath();
+
+		d3.select("svg")
+			.attr("stroke", "#fff")
+			.attr("stroke-width", 0.5)
+			.attr("stroke-linejoin", "round")
+		.selectAll("path")
+			.data(contours(values))
+			.enter().append("path")
+			.attr("d", path);
 	},
 });
 

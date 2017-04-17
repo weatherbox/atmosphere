@@ -36,12 +36,13 @@ L.Atmosphere = L.Class.extend({
 			self.element = 'APCP';
 
 			self._initStreamline();
+			self._initContour();
 
 			//window.windmapUI.setTimeSlider(self.start_time, self.end_time, self.time);
 		});
 
 		// set click event
-		map.on("click", this.showPointValue, this);
+		//map.on("click", this.showPointValue, this);
 	},
 	
 	setTime: function (utc){
@@ -102,6 +103,13 @@ L.Atmosphere = L.Class.extend({
 		var tileZoom = (level == "surface") ? [0, 1] : [0];
 
 		return new L.Grib2tile(url, element, { tileZoom: tileZoom });
+	},
+
+	_initContour: function (){
+		this._contourGrib = this._initGrib2tile('PRMSL');
+
+		this._contour = new L.Contour(this._contourGrib);
+		this._contour.addTo(this._map);
 	},
 
 	_initStreamline: function (){
