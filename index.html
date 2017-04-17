@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset=utf-8 />
-		<title>Windmap</title>
+		<title>Atmosphere</title>
 		<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
 		<link rel="stylesheet" href="lib/leaflet-v1.0.2.css" />
 		<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.2.2/semantic.min.css"></link>
@@ -18,7 +18,7 @@
 			  fill: none;
 			  fill-opacity: 0;
 			  stroke: #fff;
-			  stroke-width: 1.5px;
+			  stroke-width: 1.0px;
 			}
 
 		</style>
@@ -28,13 +28,25 @@
 		<div id='app'></div>
 
 		<script src="lib/leaflet-v1.0.2.js"></script>
-		<script src="//d3js.org/d3.v3.min.js" charset="utf-8"></script>
 		<script src="lib/chroma.min.js"></script>
+
+		<script src="//unpkg.com/d3-array@1"></script>
+		<script src="//unpkg.com/d3-contour@1"></script>
+		<script src="//unpkg.com/d3-collection@1"></script>
+		<script src="//unpkg.com/d3-color@1"></script>
+		<script src="//unpkg.com/d3-dispatch@1"></script>
+		<script src="//unpkg.com/d3-geo@1"></script>
+		<script src="//unpkg.com/d3-geo-projection@2"></script>
+		<script src="//unpkg.com/d3-interpolate@1"></script>
+		<script src="//unpkg.com/d3-selection@1"></script>
+		<script src="//unpkg.com/d3-scale@1"></script>
+
 		<script src="streamline.js/streamline.js"></script>
 		<script src="streamline.js/leaflet-streamline.js"></script>
 		<script src="grib2tiles/grib2tile.js"></script>
 		<script src="leaflet-grib2tile.js"></script>
-		<script src="leaflet-windmap.js"></script>
+		<script src="leaflet-atmosphere.js"></script>
+		<script src="leaflet-contour.js"></script>
 		<script src="lib/jquery-1.8.2.min.js"></script>
 		<script>
 			$(function() {
@@ -51,51 +63,9 @@
 					})
 					.addLayer(mapboxTiles);
 
-				var windmap = new L.Windmap(map);
-
-				//$.getJSON("/weatherbox/grib2tiles/functions/msm-contour/out.geojson", function (data){
-				//	L.geoJSON(data).addTo(map);
-				//});
-
-				var svg = d3.select(map.getPanes().overlayPane).append("svg"),
-    				g = svg.append("g").attr("class", "leaflet-zoom-hide");
-
-				d3.json("/weatherbox/grib2tiles/functions/msm-contour/out.geojson", function(error, collection) {
-  					if (error) throw error;
-
-					var transform = d3.geo.transform({point: projectPoint}),
-					path = d3.geo.path().projection(transform);
-
-					var feature = g.selectAll("path")
-						.data(collection.features)
-						.enter().append("path");
-
-					feature.attr("d", path);
-
-					map.on("viewreset", reset);
-					reset();
-
-					function reset() {
-						var bounds = path.bounds(collection),
-							topLeft = bounds[0],
-							bottomRight = bounds[1];
-
-						svg	.attr("width", bottomRight[0] - topLeft[0])
-							.attr("height", bottomRight[1] - topLeft[1])
-							.style("left", topLeft[0] + "px")
-							.style("top", topLeft[1] + "px");
-
-						g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
-					}
-				});
-
-				function projectPoint(x, y) {
-					var point = map.latLngToLayerPoint(new L.LatLng(y, x));
-					this.stream.point(point.x, point.y);
-				}
+				var atmosphere = new L.Atmosphere(map);
 
 				window.map = map;
-				window.windmap = windmap;
 			});
 		</script>
 	</body>
