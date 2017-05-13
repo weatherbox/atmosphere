@@ -230,8 +230,8 @@ L.Grib2tile = L.GridLayer.extend({
 
 		this._dlat = dlat;
 		this._dlng = dlon;
-		this._fnx = (p2.tx - p1.tx) * (this._tnx - 1) - p1.x + p2.x + 2;
-		this._fny = (p2.ty - p1.ty) * (this._tny - 1) - p1.y + p2.y + 2;
+		this._fnx = (p2.tx - p1.tx) * this._tnx - p1.x + p2.x + 1;
+		this._fny = (p2.ty - p1.ty) * this._tny - p1.y + p2.y + 1;
 		var length = this._fnx * this._fny;
 
 		if (this.element == "wind"){

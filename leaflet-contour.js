@@ -60,8 +60,9 @@ L.Contour = L.Layer.extend({
 
 		var map = this._map;
 		function projectPoint (x, y){
-			console.log(x, y);
-			var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+			var lat = field._p0.lat - field._dlat * y;
+			var lon = field._p0.lng + field._dlng * x;
+			var point = map.latLngToLayerPoint(new L.LatLng(lat, lon));
 			this.stream.point(point.x, point.y);
 		}
 
