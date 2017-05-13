@@ -24,10 +24,6 @@ L.Contour = L.Layer.extend({
 		this._width  = map.getSize().x;	
 		this._height = map.getSize().y;
 
-		this._retina = window.devicePixelRatio >= 2;
-		this._canvasWidth = (this._retina) ? this._width * 2 : this._width;
-		this._canvasHeight = (this._retina) ? this._height * 2 : this._height;
-
 		this._initLayer();
 
 		// first draw
@@ -36,81 +32,20 @@ L.Contour = L.Layer.extend({
 
 	onRemove: function () {
 		this._map.getPanes().overlayPane.removeChild(this._layer);
-		this._map.off('viewreset');
-		this._map.off('moveend');
 	},
 
 	getEvents: function (){
 		return {
-			viewreset: this._update,
 			moveend:   this._update,
-			movestart: this._startUpdate,
-			zoomStart: this._startZoom,
-			zoom:      this._reset,
-			zoomanim:  this._animateZoom
 		};
 	},
 
 	_initLayer: function (){
-		this._layer = L.DomUtil.create('div', 'contour-layer');
-		this._map.getPanes().overlayPane.appendChild(this._layer);
-
-		var svg = document.createElement("svg");
-		svg.style.width = this._width + 'px';
-		svg.style.height = this._height + 'px';
-		svg.style.position = 'absolute';
-		svg.style.top = 0;
-		svg.style.left = 0;
-		svg.style.zIndex = 4;
-
-		this._layer.appendChild(svg);
-	},
-
-	
-	_startZoom: function (){
-		this._startUpdate();
-	},
-
-	_animateZoom: function (e) {
-		var scale = this._map.getZoomScale(e.zoom, this.zoom),
-			offset = this._map._latLngBoundsToNewLayerBounds(this.bounds, e.zoom, e.center).min;
-
-		this._setLayerCanvasScale(scale);
-		L.DomUtil.setPosition(this._layer, offset);
-	},
-
-	_reset: function (layer_zoom, origin){
-		var zoom = this._map.getZoom();
-		var scale = Math.pow(2, zoom - this.zoom);
-		var pos = this._map.latLngToLayerPoint(this.origin);
-		
-		this._setLayerCanvasScale(scale);	
-		L.DomUtil.setPosition(this._layer, pos);
-	},
-
-	_setLayerCanvasScale: function (scale){
-		var self = this;
-		this._layerCanvases.forEach(function (canvas){
-			canvas.style.width = (self._width * scale) + 'px';
-			canvas.style.height = (self._height * scale) + 'px';
-		});
-	},
-
-	_startUpdate: function (){
-		if (!this._updating){
-			this._updating = true;
-			this.options.onUpdate();
-		}
-	},
-
-	_endUpdate: function (){
-		this._updating = false;
-		this.options.onUpdated();
+		L.svg().addTo(this._map);
+		this._svg = d3.select("#map").select("svg");
 	},
 
 	_update: function (){
-		this._startUpdate();
-
 		var bounds = this._map.getBounds(),
 			zoom = this._map.getZoom();
 		var self = this;
@@ -123,24 +58,31 @@ L.Contour = L.Layer.extend({
 	_updateField: function (field, bounds, zoom){
 		console.log(field);
 
+		var map = this._map;
+		function projectPoint (x, y){
+			console.log(x, y);
+			var point = map.latLngToLayerPoint(new L.LatLng(y, x));
+			this.stream.point(point.x, point.y);
+		}
+
 		var values = field._field;
 		var contours = d3.contours().size([field._fnx, field._fny]);
-		var path = d3.geoPath();
+		var transform = d3.geoTransform({point: projectPoint});
+		var path = d3.geoPath().projection(transform);
 
-		d3.select("svg")
+		this._svg
 			.attr("stroke", "#fff")
 			.attr("stroke-width", 0.5)
 			.attr("stroke-linejoin", "round")
 		.selectAll("path")
 			.data(contours(values))
 			.enter().append("path")
+			.attr("fill", "none")
 			.attr("d", path);
 	},
+
 });
 
-L.contour = function() {
-	return new L.Contour();
-};
 
 
 /*
