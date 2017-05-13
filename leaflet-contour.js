@@ -57,6 +57,7 @@ L.Contour = L.Layer.extend({
 
 	_updateField: function (field, bounds, zoom){
 		console.log(field);
+		console.time("create contour");
 
 		var map = this._map;
 		function projectPoint (x, y){
@@ -79,90 +80,12 @@ L.Contour = L.Layer.extend({
 			.data(contours(values))
 			.enter().append("path")
 			.attr("fill", "none")
+			.attr("value", function(d){ console.log(d.value); return d.value; })
 			.attr("d", path);
+
+		console.timeEnd("create contour");
 	},
 
 });
-
-
-
-/*
- * StreamlineMaskMercator - specified for Spherical Mercator
- *
- */
-
-function StreamlineMaskMercator (args) {
-	this.field = args.field;
-
-	// color
-	this.color = args.color;
-
-	// mercator
-	this.originPoint = args.originPoint;
-	this._scale = 256 * Math.pow(2, args.zoom);
-	this._retinaScale = (args.retina) ? 2 : 1;
-
-	// sherical mercator const
-	this._R = L.Projection.SphericalMercator.R;
-	this._mercatorScale = 0.5 / (Math.PI * this._R);
-}
-
-StreamlineMaskMercator.prototype.init = function (width, height, mask) {
-	this.width = width;
-	this.height = height;
-	this.mask = mask;
-};
-
-StreamlineMaskMercator.prototype.interpolate = function () {
-	this._X = [];
-	for (var x = 0; x < this.width; x += 2){
-		var lng = this.unprojectLng(x);
-		this._X.push(this.field.getDx(lng));
-	}
-
-	this.rows = [];
-	for (var y = 0; y < this.height; y += 2){
-		this._interpolateRow(y);
-	}
-};
-
-// interpolate each 2x2 pixels
-StreamlineMaskMercator.prototype._interpolateRow = function (y) {
-	var lat = this.unprojectLat(y);
-	var Y = this.field.getDy(lat);
-
-	var row = [];
-
-	for (var x = 0; x < this.width; x += 2){
-		var v = this.field.getValueXY(this._X[x/2], Y);
-
-		var color = (v == null) ?
-			Streamline.prototype.TRANSPARENT_BLACK :
-			this.color(v);
-
-		this.mask.set(x,   y,   color)
-		this.mask.set(x+1, y,   color)
-		this.mask.set(x,   y+1, color)
-		this.mask.set(x+1, y+1, color);
-	}
-
-	this.rows[y / 2] = row;
-};
-
-
-StreamlineMaskMercator.prototype.unprojectLat = function (y) {
-	var Y = this.originPoint.y + y / this._retinaScale;
-	var my = (0.5 - Y / this._scale) / this._mercatorScale;
-	var lat = (2 * Math.atan(Math.exp(my / this._R)) - (Math.PI / 2)) * 180 / Math.PI;
-	return lat;
-};
-
-StreamlineMaskMercator.prototype.unprojectLng = function (x) {
-	var X = this.originPoint.x + x / this._retinaScale;
-	var mx = (X / this._scale - 0.5) / this._mercatorScale;
-	var lng = mx * 180 / Math.PI / this._R;
-	return lng;
-};
-
 
 
