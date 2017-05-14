@@ -76,14 +76,15 @@ L.Contour = L.Layer.extend({
 			.attr("stroke", "#fff")
 			.attr("stroke-width", 0.5)
 			.attr("stroke-linejoin", "round")
+			.attr("fill", "#fff")
+			.attr("fill-opacity", 0)
 		.selectAll("path")
 			.data(contours(values))
 			.enter().append("path")
-			.attr("fill", "none")
 			.attr("value", function(d){ console.log(d.value); return d.value; })
 			.attr("d", path)
 			.on("mouseover", function() {
-				d3.select(this).style("stroke-width", "2");
+				d3.select(this).style("stroke-width", "2.5");
 			})
 			.on("mouseout", function() {
 				d3.select(this).style("stroke-width", "0.5");
