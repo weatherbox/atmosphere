@@ -42,7 +42,7 @@ L.Atmosphere = L.Class.extend({
 		});
 
 		// set click event
-		//map.on("click", this.showPointValue, this);
+		map.on("click", this.showPointValue, this);
 	},
 	
 	setTime: function (utc){
@@ -164,53 +164,44 @@ L.Atmosphere = L.Class.extend({
 	showPointValue: function (e) {
 		var latlng = e.latlng;
 
-		if (this.element == "wind"){
-			var v = this._windGrib.getVector(latlng);
-			if (v[0] != null) this._initPointValue(v, latlng);
-
-		}else{
-			var v = this._maskGrib.getValue(latlng);
-			if (v != null) this._initPointValue(v, latlng);
-		}
+		var wind = this._windGrib.getVector(latlng);
+		var rain = this._maskGrib.getValue(latlng);
+		var pres = this._contourGrib.getValue(latlng);
+		if (wind[0] != null) this._initPointValue(wind, rain, pres, latlng);
 	},
 
 	updatePointValue: function () {
 		var latlng = this._pointMarker.getLatLng();
 
-		if (this.element == "wind"){
-			var v = this._windGrib.getVector(latlng);
-			if (v[0] != null) this._updatePointValue(v, latlng);
-
-		}else{
-			var v = this._maskGrib.getValue(latlng);
-			if (v != null) this._updatePointValue(v, latlng);
-		}
+		var wind = this._windGrib.getVector(latlng);
+		var rain = this._maskGrib.getValue(latlng);
+		var pres = this._contourGrib.getValue(latlng);
+		if (wind[0] != null) this._updatePointValue(wind, rain, pres, latlng);
 	},
 
-	_updatePointValue: function (v, latlng) {
-		var icon = this._createPointIcon(v);
+	_updatePointValue: function (wind, rain, pres, latlng) {
+		var icon = this._createPointIcon(wind, rain, pres);
 		this._pointMarker.setIcon(icon);
-		window.windmapUI.changePointDetail(latlng.lat, latlng.lng);
 	},
 
-	_pointText: function (v) {
-		if (this.element == "wind"){
+	_pointText: function (v, element) {
+		if (element == "wind"){
 			var speed = Math.sqrt(v[0]*v[0] + v[1]*v[1]);
 			var ang = Math.acos(v[1] / speed) / Math.PI * 180 + 180;
 			if (v[0] < 0) ang = 360 - ang;
 
 			return Math.round(ang) + "° "  + speed.toFixed(1) + "m/s";
 
-		}else if (this.element == "TMP"){
+		}else if (element == "TMP"){
 			return (v - 273.15).toFixed(1) + "℃";
 
-		}else if (this.element == "TCDC"){
+		}else if (element == "TCDC"){
 			return v.toFixed(0) + "%";
 
-		}else if (this.element == "APCP"){
+		}else if (element == "APCP"){
 			return v.toFixed(1) + "mm/h";
 
-		}else if (this.element == "PRMSL"){
+		}else if (element == "PRMSL"){
 			return (v / 100).toFixed(0) + "hPa";
 
 		}else{
@@ -218,13 +209,12 @@ L.Atmosphere = L.Class.extend({
 		}
 	},
 
-	_initPointValue: function (v, latlng){
-		var icon = this._createPointIcon(v);
+	_initPointValue: function (wind, rain, pres, latlng){
+		var icon = this._createPointIcon(wind, rain, pres);
 
 		if (this._pointMarker) {
 			this._pointMarker.setLatLng(latlng);
 			this._pointMarker.setIcon(icon);
-			window.windmapUI.changePointDetail(latlng.lat, latlng.lng);
 
 		}else{
 			this._pointMarker = L.marker(
@@ -233,19 +223,25 @@ L.Atmosphere = L.Class.extend({
 			).addTo(this._map);
 
 			this._pointMarker.on('dragend', this.updatePointValue, this);
-			this._pointMarker.on('click', this.showPointDetail, this);
+			//this._pointMarker.on('click', this.showPointDetail, this);
 		}
 	},
 	
-	_createPointIcon: function (value) {
-		var text = this._pointText(value);
+	_createPointIcon: function (wind, rain, pres) {
+		var text1 = this._pointText(wind, "wind");
+		var text2 = this._pointText(rain, "APCP");
+		var text3 = this._pointText(pres, "PRMSL");
 
 		return new L.divIcon({
-			iconSize: [10, 60],
-			iconAnchor: [0, 60],
+			iconSize: [10, 80],
+			iconAnchor: [0, 80],
 			className: 'leaflet-point-icon',
 			html: '<div class="point-flag">' +
-				'<a class="flag-text" id="flag-text">' + text + '</a>' +
+				'<a class="flag-text" id="flag-text">' + 
+				text1 + '<br/>' +
+				text2 + '<br/>' +
+				text3 + '<br/>' +
+				'</a>' +
 				'<div class="flag-pole"></div>' +
 				'<div class="flag-draggable-square"></div>' +
 				'<div class="flag-anchor"></div>' +
