@@ -41,7 +41,7 @@ L.Contour = L.Layer.extend({
 	},
 
 	_initLayer: function (){
-		L.svg().addTo(this._map);
+		L.svg({clickable:true}).addTo(this._map);
 		this._svg = d3.select("#map").select("svg");
 	},
 
@@ -81,7 +81,13 @@ L.Contour = L.Layer.extend({
 			.enter().append("path")
 			.attr("fill", "none")
 			.attr("value", function(d){ console.log(d.value); return d.value; })
-			.attr("d", path);
+			.attr("d", path)
+			.on("mouseover", function() {
+				d3.select(this).style("stroke-width", "2");
+			})
+			.on("mouseout", function() {
+				d3.select(this).style("stroke-width", "0.5");
+			});
 
 		console.timeEnd("create contour");
 	},
