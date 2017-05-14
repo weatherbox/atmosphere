@@ -11,7 +11,7 @@
 
 L.Atmosphere = L.Class.extend({
 	options: {
-		tileJson: "//msm-tiles.s3-website-ap-northeast-1.amazonaws.com/tiles/tile.json"
+		tileJson: "//d26w2s8b1vy47b.cloudfront.net/tiles/tile.json"
 	},
 
 	initialize: function (map, options) {
@@ -95,6 +95,7 @@ L.Atmosphere = L.Class.extend({
 	_initGrib2tile: function (element){
 		var level = (!element || element == "TMP") ? this.level : "surface";
 		var url = this.data.url
+			.replace("http:", "")
 			.replace("{valid_time}", this.dateString(this.time))
 			.replace("{level}", level);
 
