@@ -30,107 +30,59 @@ L.Atmosphere = L.Class.extend({
 			// show last o-clock
 			var now = Math.floor(Date.now() / (3600 * 1000)) * 3600 * 1000;
 			self.time = Math.max(self.start_time, Math.min(self.end_time, now));
+			console.log(self.dateString(self.time));
 
-			// init windmap elements
-			self.level = 'surface';
-			self.element = 'APCP';
-
-			self._initStreamline();
-			self._initContour();
-
-			//window.windmapUI.setTimeSlider(self.start_time, self.end_time, self.time);
+			// init layers
+			self._initMask("APCP", "surface");
+			self._initStreamline("surface");
+			self._initContour("PRMSL", "surface");
 		});
 
 		// set click event
 		map.on("click", this.showPointValue, this);
 	},
 	
-	setTime: function (utc){
-		this.time = utc;
-		this._update();
-	},
 
-	setElement: function (element){
-		console.log(element);
-		var code = {
-			wind: "wind",
-			temp: "TMP",
-			cloud: "TCDC",
-			rain: "APCP",
-			press: "PRMSL"
-		};
-		this.element = code[element];
-
-		if (this.element == "wind"){
-			this._maskGrib = null;
-			this._streamline.setMaskData(null);
-
-		}else{
-			this._maskGrib = this._initGrib2tile(this.element);
-			this._streamline.setMaskData(this._maskGrib, this._maskColor(this.element));
-		}
-		this._update();
-	},
-	
-	setLevel: function (level){
-		if (level != this.level){
-
-			// surface <-> upper
-			if (this.level == 'surface' && level != 'surface'){
-				var time_3h = Math.round(this.time / (3 * 3600 * 1000)) * 3 * 3600 * 1000
-				window.windmapUI.changeTimeSliderInterval('3h')
-				window.windmapUI.changeTimeSliderTime(time_3h)
-
-				this.time = time_3h;
-
-			}else if (this.level != 'surface' && level == 'surface'){
-				window.windmapUI.changeTimeSliderInterval('1h');
-			}
-
-			this.level = level;
-			this._update();
-		}
-	},
-
-	_initGrib2tile: function (element){
-		var level = (!element || element == "TMP") ? this.level : "surface";
+	_initGrib2tile: function (element, level){
 		var url = this.data.url
 			.replace("http:", "")
 			.replace("{valid_time}", this.dateString(this.time))
 			.replace("{level}", level);
-
-		if (element) url = url.replace("{e}", element);
+		if (element != "wind") url = url.replace("{e}", element);
 
 		var tileZoom = (level == "surface") ? [0, 1] : [0];
-
 		return new L.Grib2tile(url, element, { tileZoom: tileZoom });
 	},
 
-	_initContour: function (){
-		this._contourGrib = this._initGrib2tile('PRMSL');
+	_initContour: function (element, level){
+		this._contourGrib = this._initGrib2tile(element, level);
 
 		this._contour = new L.Contour(this._contourGrib);
 		this._contour.addTo(this._map);
 	},
 
-	_initStreamline: function (){
+	_initStreamline: function (level){
 		var self = this;
-		this._windGrib = this._initGrib2tile();
+		this._windGrib = this._initGrib2tile("wind", level);
 
 		this._streamline = new L.Streamline(this._windGrib, {
 			//onUpdate: window.windmapUI.showLoading,
 			onUpdated: function () {
-			//	window.windmapUI.hideLoading();
+				//	window.windmapUI.hideLoading();
 				if (self._pointMarker) self.updatePointValue();
 			}
 		});
 
-		if (this.element != "wind"){
-			this._maskGrib = this._initGrib2tile(this.element);
-			this._streamline.setMaskData(this._maskGrib, this._maskColor(this.element));
+		if (this._maskGrib){
+			this._streamline.setMaskData(this._maskGrib, this._mask_color);
 		}
 
 		this._streamline.addTo(this._map);
+	},
+
+	_initMask: function (element, level){
+		this._maskGrib = this._initGrib2tile(element, level);
+		this._mask_color = this._maskColor(element);
 	},
 
 	_updateWindGrib: function (){

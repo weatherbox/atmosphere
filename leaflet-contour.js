@@ -72,6 +72,8 @@ L.Contour = L.Layer.extend({
 		var transform = d3.geoTransform({point: projectPoint});
 		var path = d3.geoPath().projection(transform);
 
+		this._svg.selectAll("path").remove();
+
 		this._svg
 			.attr("stroke", "#fff")
 			.attr("stroke-width", 0.5)
