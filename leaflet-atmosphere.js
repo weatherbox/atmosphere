@@ -11,7 +11,7 @@
 
 L.Atmosphere = L.Class.extend({
 	options: {
-		tileJson: "http://msm-tiles.s3-website-ap-northeast-1.amazonaws.com/tiles/tile.json"
+		tileJson: "//msm-tiles.s3-website-ap-northeast-1.amazonaws.com/tiles/tile.json"
 	},
 
 	initialize: function (map, options) {
